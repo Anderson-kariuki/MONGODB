@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -38,7 +39,7 @@ func main() {
 
 	quickstartDatabase := client.Database("quickstart")
 	podcastsCollection := quickstartDatabase.Collection("podcast")
-	episodesCollection := quickstartDatabase.Collection("episodes")
+	// episodesCollection := quickstartDatabase.Collection("episodes")
 
 	// podcastResult, err := podcastsCollection.InsertOne(ctx, bson.D{
 	// 	{"title", "the polyglot Developer Podcast"},
@@ -69,57 +70,95 @@ func main() {
 	// }
 	// fmt.Println(episodeResult.InsertedIDs...)
 
-	cursor, err := episodesCollection.Find(ctx, bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	// this is not to be used for larger documents with many items
-	// var episodes []bson.M
-	// if err = cursor.All(ctx, &episodes); err != nil {
+	// cursor, err := episodesCollection.Find(ctx, bson.M{})
+	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	// // fmt.Println(episodes)
-	// for _, episode := range episodes {
-	// 	fmt.Println(episode["title"])
+	// // this is not to be used for larger documents with many items
+	// // var episodes []bson.M
+	// // if err = cursor.All(ctx, &episodes); err != nil {
+	// // 	log.Fatal(err)
+	// // }
+	// // // fmt.Println(episodes)
+	// // for _, episode := range episodes {
+	// // 	fmt.Println(episode["title"])
+	// // }
+	// defer cursor.Close(ctx)
+	// for cursor.Next(ctx) {
+	// 	var episode bson.M
+	// 	if err = cursor.Decode(&episode); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	// fmt.Println(episode)
 	// }
-	defer cursor.Close(ctx)
-	for cursor.Next(ctx) {
-		var episode bson.M
-		if err = cursor.Decode(&episode); err != nil {
-			log.Fatal(err)
-		}
-		// fmt.Println(episode)
-	}
 
-	var podcast bson.M
-	if err = podcastsCollection.FindOne(ctx, bson.M{}).Decode(&podcast); err != nil {
-		log.Fatal(err)
-	}
-	// fmt.Println(podcast)
+	// var podcast bson.M
+	// if err = podcastsCollection.FindOne(ctx, bson.M{}).Decode(&podcast); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// // fmt.Println(podcast)
 
-	filterCursor, err := episodesCollection.Find(ctx, bson.M{"duration": 34})
+	// filterCursor, err := episodesCollection.Find(ctx, bson.M{"duration": 34})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// var episodesFiltered []bson.M
+	// if err = filterCursor.All(ctx, &episodesFiltered); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// // fmt.Println(episodesFiltered)
+
+	// opts := options.Find()
+	// opts.SetSort(bson.D{{"duration", 1}})
+	// sortCursor, err := episodesCollection.Find(ctx, bson.D{
+	// 	{"duration", bson.D{
+	// 		{"$gt", 23},
+	// 	}},
+	// }, opts)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// var episodesSorted []bson.D
+	// if err = sortCursor.All(ctx, &episodesSorted); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println(episodesSorted)
+
+	id, _ := primitive.ObjectIDFromHex("66c7416e3adca4ea8617fae1")
+
+	result, err := podcastsCollection.UpdateOne(
+		ctx, bson.M{"_id": id},
+		bson.D{
+			{"$set", bson.D{{"author", "Nicolas Raboy"}}},
+		},
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var episodesFiltered []bson.M
-	if err = filterCursor.All(ctx, &episodesFiltered); err != nil {
-		log.Fatal(err)
-	}
-	// fmt.Println(episodesFiltered)
+	fmt.Printf("Updated %v Documents ", result.ModifiedCount)
 
-	opts := options.Find()
-	opts.SetSort(bson.D{{"duration", 1}})
-	sortCursor, err := episodesCollection.Find(ctx, bson.D{
-		{"duration", bson.D{
-			{"$gt", 23},
-		}},
-	}, opts)
+	result, err = podcastsCollection.UpdateMany(
+		ctx,
+		bson.M{"title": "the polyglot Developer Podcast"},
+		bson.D{
+			{"$set", bson.D{{"author", "Anderson Kariuki"}}},
+		},
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var episodesSorted []bson.D
-	if err = sortCursor.All(ctx, &episodesSorted); err != nil {
+	fmt.Printf("updated %v Documents!\n", result.ModifiedCount)
+
+	result, err = podcastsCollection.ReplaceOne(
+		ctx,
+		bson.M{"author": "Anderson Kariuki"},
+		bson.M{
+			"title":  "The Anderson Kariuki Show",
+			"author": "Andy Kariuki",
+		},
+	)
+	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(episodesSorted)
+	fmt.Printf("updated %v Documents!\n", result.ModifiedCount)
 }
